@@ -1,4 +1,3 @@
-# clearfogrok
 # Auto Clear Fog Rise Of Kingdom
 
 ## 🖥️ Tính năng chính
