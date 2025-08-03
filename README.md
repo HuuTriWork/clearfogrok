@@ -23,6 +23,8 @@ pip install -r requirements.txt
 ```
 
 ## 💡 Mẹo sử dụng
+- Kết nối thiết bị trước rồi mới dùng được
+- Sử dụng ngôn ngữ english
 - Độ phân giải 1024 * 576 (191dpi)
 - Trại trinh sát để ở giữa màn hình và xung quanh trống trãi
   
