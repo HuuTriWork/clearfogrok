@@ -1,8 +1,6 @@
 # clearfogrok
 # Auto Clear Fog Rise Of Kingdom
 
-
-
 ## 🖥️ Tính năng chính
 
 - Kết nối một hoặc nhiều thiết bị giả lập MEmu.
@@ -24,4 +22,9 @@ Chạy lệnh sau để cài tất cả thư viện cần thiết:
 ```bash
 pip install -r requirements.txt
 ```
-Make By SubinDev ( Truong Sa and Hoang Sa belong to VIETNAM &lt;3 )
+
+## 💡 Mẹo sử dụng
+- Độ phân giải 1024 * 576 (191dpi)
+- Trại trinh sát để ở giữa màn hình và xung quanh trống trãi
+  
+Make By SubinDev (Truong Sa and Hoang Sa belong to VIETNAM &lt;3)
