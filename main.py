@@ -11,7 +11,7 @@ init()
 
 class MEmuController:
     def __init__(self):
-        self.adb_path = r"C:\Microvirt\MEmu\adb.exe"
+        self.adb_path = "adb.exe"
         self.all_devices = []
         self.connected_devices = []
         self.screenshot_dir = "screenshots"
@@ -21,6 +21,7 @@ class MEmuController:
         self.rest_interval = 0  
         self.rest_duration = 0 
         self.current_run_count = 0
+        self.running = True
         os.makedirs(self.screenshot_dir, exist_ok=True)
         os.makedirs(self.template_dir, exist_ok=True)
         
@@ -44,7 +45,6 @@ class MEmuController:
 
     def _take_screenshot(self, device, filename):
         try:
-         
             screenshot_path = os.path.join(self.screenshot_dir, filename)
             result = self._run_adb("-s", device, "shell", "screencap", "-p", "/sdcard/screen.png")
             if result is None:
@@ -53,14 +53,12 @@ class MEmuController:
             self._run_adb("-s", device, "pull", "/sdcard/screen.png", screenshot_path)
             self._run_adb("-s", device, "shell", "rm", "/sdcard/screen.png")
             
-          
             try:
                 img = cv2.imread(screenshot_path)
                 if img is None or img.size == 0:
                     raise ValueError("Empty image")
                 return True
             except:
-           
                 screenshot_path = os.path.join(self.screenshot_dir, f"alt_{filename}")
                 result = self._run_adb("-s", device, "exec-out", "screencap", "-p", ">", screenshot_path)
                 if result is None:
@@ -102,152 +100,142 @@ class MEmuController:
             return False
         x, y = position
         
-        
         if self.anti_ban_enabled:
-            x += random.randint(-5, 5)
-            y += random.randint(-5, 5)
-            
-       
-        if self.anti_ban_enabled:
-            time.sleep(random.uniform(0.1, 0.3))
+            x += random.randint(-10, 10)
+            y += random.randint(-10, 10)
+            time.sleep(random.uniform(0.1, 0.5))
             
         result = self._run_adb("-s", device, "shell", "input", "tap", str(x), str(y))
         
-      
         if self.anti_ban_enabled:
-            time.sleep(random.uniform(0.1, 0.3))
+            time.sleep(random.uniform(0.2, 0.6))
             
         return result is not None
 
     def _wait_for_image(self, device, template_filename, timeout=30, interval=1):
         start_time = time.time()
-        while time.time() - start_time < timeout:
+        while time.time() - start_time < timeout and self.running:
             position = self._find_image(device, template_filename)
             if position is not None:
                 return position
                 
-         
             actual_interval = interval
             if self.anti_ban_enabled:
-                actual_interval = random.uniform(interval*0.8, interval*1.2)
+                actual_interval = random.uniform(interval*0.7, interval*1.5)
             time.sleep(actual_interval)
         return None
 
     def _show_status(self, device, message):
-        print(f"\n{Fore.BLUE}⚙️ Device {device}: {Fore.WHITE}{message}{Style.RESET_ALL}")
+        emoji = "⚡" if "start" in message.lower() else \
+                "✅" if "success" in message.lower() else \
+                "❌" if "fail" in message.lower() else \
+                "🔍" if "look" in message.lower() else \
+                "🔄" if "process" in message.lower() else "⚙️"
+        print(f"\n{Fore.BLUE}{emoji} {device[:5]}...: {Fore.WHITE}{message}{Style.RESET_ALL}")
 
     def clear_fog(self):
         if not self.connected_devices:
-            print(f"\n{Fore.RED}⚠️ No connected devices{Style.RESET_ALL}")
+            print(f"\n{Fore.RED}⚠️ No devices!{Style.RESET_ALL}")
             return False
         
         self.current_run_count += 1
-        
-       
+        self.running = True
+
         if self.rest_interval > 0 and self.current_run_count % self.rest_interval == 0:
-            print(f"\n{Fore.YELLOW}⏳ Resting for {self.rest_duration} seconds...{Style.RESET_ALL}")
+            print(f"\n{Fore.YELLOW}💤 Rest {self.rest_duration}s...{Style.RESET_ALL}")
             time.sleep(self.rest_duration)
         
         for device in self.connected_devices:
-            self._show_status(device, "Starting fog clearing process")
+            if not self.running:
+                self._show_status(device, "Stopped by user")
+                break
+                
+            self._show_status(device, "Start fog clear")
             
-          
-            self._show_status(device, "Looking for home or map")
             home_pos = self._find_image(device, "home.png")
             map_pos = self._find_image(device, "map.png")
             
             if home_pos:
-                self._show_status(device, "Found home screen, clicking")
+                self._show_status(device, "Home found")
                 self._click_position(device, home_pos)
             elif map_pos:
-                self._show_status(device, "Found map screen, clicking")
+                self._show_status(device, "Map found")
                 self._click_position(device, map_pos)
-                time.sleep(2) 
-               
+                time.sleep(2)
                 home_pos = self._find_image(device, "home.png")
                 if home_pos:
-                    self._show_status(device, "Found home screen after map, clicking")
+                    self._show_status(device, "Home after map")
                     self._click_position(device, home_pos)
             else:
-                self._show_status(device, "Neither home nor map found")
+                self._show_status(device, "No home/map")
                 continue
                 
-            time.sleep(2)  
+            time.sleep(2)
             
-           
-            self._show_status(device, "Looking for options 1-4")
             found = False
             for i in range(1, 5):
+                if not self.running: break
                 option_pos = self._find_image(device, f"{i}.png")
                 if option_pos:
-                    self._show_status(device, f"Found option {i}, clicking")
+                    self._show_status(device, f"Option {i}")
                     self._click_position(device, option_pos)
                     found = True
                     break
                     
             if not found:
-                self._show_status(device, "No options 1-4 found")
+                self._show_status(device, "No options")
                 continue
                 
-            time.sleep(2)  
-            
+            time.sleep(2)
             
             scout_pos = self._find_image(device, "scout.png")
             if scout_pos:
-                self._show_status(device, "Found scout, clicking")
+                self._show_status(device, "Scout found")
                 self._click_position(device, scout_pos)
             else:
-                self._show_status(device, "Scout not found after option selection")
+                self._show_status(device, "No scout")
                 
-            
-            self._show_status(device, "Starting exploration process")
-            
-            
             explore_pos = self._wait_for_image(device, "explore.png")
             if explore_pos:
-                self._show_status(device, "Found explore button, clicking")
+                self._show_status(device, "Explore")
                 self._click_position(device, explore_pos)
-                time.sleep(5) 
+                time.sleep(5)
                 
-                
-                selected_pos = self._find_image(device, "selected.png")
                 notselected_pos = self._find_image(device, "notselected.png")
+                selected_pos = self._find_image(device, "selected.png")
                 
                 if notselected_pos:
-                    self._show_status(device, "Found not selected, clicking")
+                    self._show_status(device, "Selecting")
                     self._click_position(device, notselected_pos)
                 elif selected_pos:
-                    self._show_status(device, "Already selected, skipping")
+                    self._show_status(device, "Already set")
                 else:
-                    self._show_status(device, "Couldn't determine selection status")
-                
+                    self._show_status(device, "No selection")
                 
                 explore_pos = self._find_image(device, "explore.png")
                 if explore_pos:
-                    self._show_status(device, "Found explore button again, clicking")
+                    self._show_status(device, "Explore again")
                     self._click_position(device, explore_pos)
-                    
                     
                     send_pos = self._wait_for_image(device, "send.png")
                     if send_pos:
-                        self._show_status(device, "Found send button, clicking")
+                        self._show_status(device, "Sending")
                         self._click_position(device, send_pos)
                         
-                       
                         home_pos = self._wait_for_image(device, "home.png")
                         if home_pos:
-                            self._show_status(device, "Found home button, clicking")
+                            self._show_status(device, "Return home")
                             self._click_position(device, home_pos)
                         else:
-                            self._show_status(device, "Home button not found after sending")
+                            self._show_status(device, "No home after send")
                     else:
-                        self._show_status(device, "Send button not found")
+                        self._show_status(device, "No send button")
                 else:
-                    self._show_status(device, "Explore button not found after selection")
+                    self._show_status(device, "No explore after select")
             else:
-                self._show_status(device, "Explore button not found")
+                self._show_status(device, "No explore")
                 
-            self._show_status(device, "Fog clearing completed")
+            self._show_status(device, "Complete")
         
         return True
 
@@ -296,54 +284,44 @@ class MEmuController:
         if not self.all_devices:
             self.scan_devices()
         
-        print(f"\n{Fore.GREEN}📋 All Available Devices:{Style.RESET_ALL}")
+        print(f"\n{Fore.GREEN}📋 Devices:{Style.RESET_ALL}")
         for i, dev in enumerate(self.all_devices, 1):
-            status = f"{Fore.GREEN}✓ Connected{Style.RESET_ALL}" if dev in self.connected_devices else f"{Fore.RED}✗ Disconnected{Style.RESET_ALL}"
-            print(f"  {Fore.CYAN}{i}. {Fore.MAGENTA}{dev}{Style.RESET_ALL} - {status}")
+            status = f"{Fore.GREEN}✓{Style.RESET_ALL}" if dev in self.connected_devices else f"{Fore.RED}✗{Style.RESET_ALL}"
+            print(f"  {i}. {dev[:12]}... - {status}")
 
     def open_game(self, package_name="com.rok.gp.vn"):
         if not self.connected_devices:
-            print(f"\n{Fore.RED}⚠️ No connected devices{Style.RESET_ALL}")
+            print(f"\n{Fore.RED}⚠️ No devices!{Style.RESET_ALL}")
             return False
         
         success = True
         for device in self.connected_devices:
             output = self._run_adb("-s", device, "shell", "monkey", "-p", package_name, "-c", "android.intent.category.LAUNCHER", "1")
             if output is None:
-                print(f"\n{Fore.RED}❌ Failed to open game on device {device}{Style.RESET_ALL}")
+                print(f"\n{Fore.RED}❌ Failed {device[:5]}...{Style.RESET_ALL}")
                 success = False
             else:
-                print(f"\n{Fore.GREEN}✅ Successfully opened game on device {device}{Style.RESET_ALL}")
+                print(f"\n{Fore.GREEN}✅ Opened {device[:5]}...{Style.RESET_ALL}")
         return success
 
     def close_game(self, package_name="com.rok.gp.vn"):
         if not self.connected_devices:
-            print(f"\n{Fore.RED}⚠️ No connected devices{Style.RESET_ALL}")
+            print(f"\n{Fore.RED}⚠️ No devices!{Style.RESET_ALL}")
             return False
         
         success = True
         for device in self.connected_devices:
             output = self._run_adb("-s", device, "shell", "am", "force-stop", package_name)
             if output is None:
-                print(f"\n{Fore.RED}❌ Failed to close game on device {device}{Style.RESET_ALL}")
+                print(f"\n{Fore.RED}❌ Failed {device[:5]}...{Style.RESET_ALL}")
                 success = False
             else:
-                print(f"\n{Fore.GREEN}✅ Successfully closed game on device {device}{Style.RESET_ALL}")
+                print(f"\n{Fore.GREEN}✅ Closed {device[:5]}...{Style.RESET_ALL}")
         return success
 
     def set_anti_ban(self, enabled):
         self.anti_ban_enabled = enabled
-        status = "ENABLED" if enabled else "DISABLED"
-        print(f"\n{Fore.GREEN}✅ Anti-ban features {status}{Style.RESET_ALL}")
-
-    def set_repeat_settings(self, max_repeats, rest_interval, rest_duration):
-        self.max_repeats = max_repeats
-        self.rest_interval = rest_interval
-        self.rest_duration = rest_duration
-        print(f"\n{Fore.GREEN}✅ Repeat settings updated:{Style.RESET_ALL}")
-        print(f"  Max repeats: {'Infinite' if max_repeats == 0 else max_repeats}")
-        print(f"  Rest after every {rest_interval} runs" if rest_interval > 0 else "  No resting")
-        print(f"  Rest duration: {rest_duration} seconds" if rest_interval > 0 else "")
+        print(f"\n{Fore.GREEN}✅ Anti-ban {'ON' if enabled else 'OFF'}{Style.RESET_ALL}")
 
 def print_banner():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -355,24 +333,23 @@ def print_banner():
     ██║ ╚═╝ ██║███████╗██║ ╚═╝ ██║╚██████╔╝
     ╚═╝     ╚═╝╚══════╝╚═╝     ╚═╝ ╚═════╝ 
     {Style.RESET_ALL}""")
-    print(f"{Fore.YELLOW}⋆｡ﾟ✶°  MEmu Device Controller  °✶ﾟ｡⋆{Style.RESET_ALL}\n")
+    print(f"{Fore.YELLOW}⋆｡ﾟ✶°  MEmu Controller  °✶ﾟ｡⋆{Style.RESET_ALL}\n")
 
 def main():
     controller = MEmuController()
     
     while True:
         print_banner()
-        print(f"{Fore.CYAN}1. {Fore.WHITE}📋 Show Device List")
-        print(f"{Fore.CYAN}2. {Fore.WHITE}🔌 Connect Devices")
-        print(f"{Fore.CYAN}3. {Fore.WHITE}❌ Disconnect Devices")
-        print(f"{Fore.CYAN}4. {Fore.WHITE}🎮 Open Game (com.rok.gp.vn)")
-        print(f"{Fore.CYAN}5. {Fore.WHITE}🛑 Close Game (com.rok.gp.vn)")
+        print(f"{Fore.CYAN}1. {Fore.WHITE}📋 Devices")
+        print(f"{Fore.CYAN}2. {Fore.WHITE}🔌 Connect")
+        print(f"{Fore.CYAN}3. {Fore.WHITE}❌ Disconnect")
+        print(f"{Fore.CYAN}4. {Fore.WHITE}🎮 Open Game")
+        print(f"{Fore.CYAN}5. {Fore.WHITE}🛑 Close Game")
         print(f"{Fore.CYAN}6. {Fore.WHITE}🌫️ Clear Fog")
-        print(f"{Fore.CYAN}7. {Fore.WHITE}⚙️ Configure Anti-Ban")
-        print(f"{Fore.CYAN}8. {Fore.WHITE}🔄 Configure Repeat Settings")
-        print(f"{Fore.CYAN}9. {Fore.WHITE}🚪 Exit")
+        print(f"{Fore.CYAN}7. {Fore.WHITE}🛡️ Anti-Ban")
+        print(f"{Fore.CYAN}8. {Fore.WHITE}🚪 Exit")
         
-        choice = input(f"\n{Fore.YELLOW}👉 Your choice (1-9): {Style.RESET_ALL}").strip()
+        choice = input(f"\n{Fore.YELLOW}👉 Choice (1-8): {Style.RESET_ALL}").strip()
         
         if choice == "1":
             controller.show_devices()
@@ -381,29 +358,29 @@ def main():
             controller.scan_devices()
             if controller.all_devices:
                 controller.show_devices()
-                selection = input(f"\n{Fore.YELLOW}👉 Select devices to connect (1, 1+2+3, or all): {Style.RESET_ALL}")
+                selection = input(f"\n{Fore.YELLOW}👉 Devices (1, 1+2+3, all): {Style.RESET_ALL}")
                 if controller.connect_devices(selection):
-                    print(f"\n{Fore.GREEN}✅ Successfully connected!{Style.RESET_ALL}")
+                    print(f"\n{Fore.GREEN}✅ Connected!{Style.RESET_ALL}")
                     controller.show_devices()
                 else:
-                    print(f"\n{Fore.RED}❌ Invalid selection{Style.RESET_ALL}")
+                    print(f"\n{Fore.RED}❌ Invalid{Style.RESET_ALL}")
             else:
-                print(f"\n{Fore.RED}⚠️ No devices available{Style.RESET_ALL}")
+                print(f"\n{Fore.RED}⚠️ No devices{Style.RESET_ALL}")
                 
         elif choice == "3":
             if controller.connected_devices:
-                print(f"\n{Fore.GREEN}📋 Currently Connected Devices:{Style.RESET_ALL}")
+                print(f"\n{Fore.GREEN}📋 Connected:{Style.RESET_ALL}")
                 for i, dev in enumerate(controller.connected_devices, 1):
-                    print(f"  {Fore.CYAN}{i}. {Fore.MAGENTA}{dev}{Style.RESET_ALL}")
+                    print(f"  {i}. {dev[:12]}...")
                 
-                selection = input(f"\n{Fore.YELLOW}👉 Select devices to disconnect (1, 1+2+3, or all): {Style.RESET_ALL}")
+                selection = input(f"\n{Fore.YELLOW}👉 Devices (1, 1+2+3, all): {Style.RESET_ALL}")
                 if controller.disconnect_devices(selection):
-                    print(f"\n{Fore.GREEN}✅ Successfully disconnected!{Style.RESET_ALL}")
+                    print(f"\n{Fore.GREEN}✅ Disconnected!{Style.RESET_ALL}")
                     controller.show_devices()
                 else:
-                    print(f"\n{Fore.RED}❌ Invalid selection{Style.RESET_ALL}")
+                    print(f"\n{Fore.RED}❌ Invalid{Style.RESET_ALL}")
             else:
-                print(f"\n{Fore.RED}⚠️ No connected devices{Style.RESET_ALL}")
+                print(f"\n{Fore.RED}⚠️ None connected{Style.RESET_ALL}")
                 
         elif choice == "4":
             controller.open_game()
@@ -412,6 +389,13 @@ def main():
             controller.close_game()
             
         elif choice == "6":
+            try:
+                max_repeats = int(input(f"\n{Fore.YELLOW}👉 Number of runs (0 for unlimited): {Style.RESET_ALL}"))
+                controller.max_repeats = max_repeats
+            except ValueError:
+                print(f"\n{Fore.RED}⚠️ Invalid number!{Style.RESET_ALL}")
+                continue
+                
             repeat_count = 0
             while True:
                 if controller.max_repeats > 0 and repeat_count >= controller.max_repeats:
@@ -420,38 +404,29 @@ def main():
                 success = controller.clear_fog()
                 repeat_count += 1
                 
-                if not success or controller.max_repeats == 0:
-                   
-                    if controller.max_repeats == 0:
-                        cont = input(f"\n{Fore.YELLOW}👉 Completed {repeat_count} runs. Continue? (y/n): {Style.RESET_ALL}").strip().lower()
-                        if cont != 'y':
-                            break
-                    else:
+                if not success:
+                    break
+                    
+                if controller.max_repeats == 0:
+                    cmd = input(f"\n{Fore.YELLOW}👉 {repeat_count} done. Continue? (y/n/stop): {Style.RESET_ALL}").strip().lower()
+                    if cmd == 'stop':
+                        controller.running = False
+                        break
+                    elif cmd != 'y':
                         break
             
         elif choice == "7":
-            enabled = input(f"\n{Fore.YELLOW}👉 Enable anti-ban features? (y/n): {Style.RESET_ALL}").strip().lower()
+            enabled = input(f"\n{Fore.YELLOW}👉 Enable anti-ban? (y/n): {Style.RESET_ALL}").strip().lower()
             controller.set_anti_ban(enabled == 'y')
             
         elif choice == "8":
-            try:
-                max_repeats = int(input(f"\n{Fore.YELLOW}👉 Max number of repeats (0 for infinite): {Style.RESET_ALL}"))
-                rest_interval = int(input(f"{Fore.YELLOW}👉 Rest after how many runs (0 to disable): {Style.RESET_ALL}"))
-                rest_duration = 0
-                if rest_interval > 0:
-                    rest_duration = int(input(f"{Fore.YELLOW}👉 Rest duration in seconds: {Style.RESET_ALL}"))
-                controller.set_repeat_settings(max_repeats, rest_interval, rest_duration)
-            except ValueError:
-                print(f"\n{Fore.RED}⚠️ Invalid input!{Style.RESET_ALL}")
-            
-        elif choice == "9":
-            print(f"\n{Fore.MAGENTA}✨ Thank you for using MEmu Controller!{Style.RESET_ALL}")
+            print(f"\n{Fore.MAGENTA}✨ Goodbye!{Style.RESET_ALL}")
             break
             
         else:
-            print(f"\n{Fore.RED}⚠️ Invalid option!{Style.RESET_ALL}")
+            print(f"\n{Fore.RED}⚠️ Invalid!{Style.RESET_ALL}")
         
-        input(f"\n{Fore.YELLOW}Press Enter to continue...{Style.RESET_ALL}")
+        input(f"\n{Fore.YELLOW}↵ Continue...{Style.RESET_ALL}")
 
 if __name__ == "__main__":
     main()
