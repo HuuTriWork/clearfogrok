@@ -1,11 +1,15 @@
 # Auto Clear Fog Rise Of Kingdom
 
+## 🔔 Update
+
+- 8/4/2025
+
 ## 🖥️ Tính năng chính
 
-- Hộ trợ nhiều loại giả lập
+- Hổ trợ nhiều loại giả lập
 - Kết nối một hoặc nhiều thiết bị giả lập 
 - Tự động xóa sương mù
-- Antiban
+- Anti-ban
 
 ---
 
@@ -24,6 +28,7 @@ pip install -r requirements.txt
 ```
 
 ## 💡 Mẹo sử dụng
+
 - Kết nối thiết bị trước rồi mới dùng được
 - Sử dụng ngôn ngữ english
 - Độ phân giải 1024 * 576 (191dpi)
