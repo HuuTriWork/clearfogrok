@@ -1,13 +1,22 @@
-import subprocess 
 import os
-import time
-from colorama import init, Fore, Back, Style
 import sys
-import cv2
-import numpy as np
+import time
 import random
+import subprocess
+try:
+    from colorama import init, Fore, Back, Style
+    import cv2
+    import numpy as np
+except ImportError:
+    import pip
+    packages = ['colorama', 'opencv-python', 'numpy']
+    for package in packages:
+        pip.main(['install', package])
+    from colorama import init, Fore, Back, Style
+    import cv2
+    import numpy as np
 
-init()  
+init()
 
 class MEmuController:
     def __init__(self):
@@ -17,14 +26,14 @@ class MEmuController:
         self.screenshot_dir = "screenshots"
         self.template_dir = "templates"
         self.anti_ban_enabled = True
-        self.max_repeats = 0 
-        self.rest_interval = 0  
-        self.rest_duration = 0 
+        self.max_repeats = 0
+        self.rest_interval = 0
+        self.rest_duration = 0
         self.current_run_count = 0
         self.running = True
         os.makedirs(self.screenshot_dir, exist_ok=True)
         os.makedirs(self.template_dir, exist_ok=True)
-        
+
     def _run_adb(self, *args):
         try:
             result = subprocess.run([self.adb_path] + list(args),
@@ -49,7 +58,7 @@ class MEmuController:
             result = self._run_adb("-s", device, "shell", "screencap", "-p", "/sdcard/screen.png")
             if result is None:
                 return False
-                
+            
             self._run_adb("-s", device, "pull", "/sdcard/screen.png", screenshot_path)
             self._run_adb("-s", device, "shell", "rm", "/sdcard/screen.png")
             
