@@ -3,28 +3,20 @@ import sys
 import time
 import random
 import subprocess
-import requests
-from urllib.parse import urlparse
 try:
     from colorama import init, Fore, Back, Style
     import cv2
     import numpy as np
 except ImportError:
     import pip
-    packages = ['colorama', 'opencv-python', 'numpy', 'requests']
+    packages = ['colorama', 'opencv-python', 'numpy']
     for package in packages:
         pip.main(['install', package])
     from colorama import init, Fore, Back, Style
     import cv2
     import numpy as np
-    import requests
 
 init()
-
-GITHUB_REPO = "https://github.com/HuuTriWork/clearfogrok"
-MAIN_SCRIPT_URL = "https://raw.githubusercontent.com/HuuTriWork/clearfogrok/refs/heads/main/main.py"
-VERSION_FILE_URL = "https://raw.githubusercontent.com/HuuTriWork/clearfogrok/refs/heads/main/version.txt"
-CURRENT_VERSION = "1.2"
 
 class MEmuController:
     def __init__(self):
@@ -352,81 +344,7 @@ def print_banner():
     {Style.RESET_ALL}""")
     print(f"{Fore.YELLOW}⋆｡ﾟ✶°  MEmu Controller  °✶ﾟ｡⋆{Style.RESET_ALL}\n")
 
-def check_for_updates():
-    try:
-        script_path = os.path.abspath(__file__)
-        
-        response = requests.get(VERSION_FILE_URL, timeout=5)
-        if response.status_code != 200:
-            return False, "Failed to fetch version info"
-            
-        latest_version = response.text.strip()
-        
-        if latest_version == CURRENT_VERSION:
-            return False, f"Already up-to-date (v{CURRENT_VERSION})"
-            
-        response = requests.get(MAIN_SCRIPT_URL, timeout=10)
-        if response.status_code != 200:
-            return False, "Failed to fetch update"
-            
-        latest_script = response.text
-        
-        return True, {
-            'current_version': CURRENT_VERSION,
-            'latest_version': latest_version,
-            'latest_script': latest_script,
-            'script_path': script_path
-        }
-        
-    except Exception as e:
-        return False, f"Update check failed: {str(e)}"
-
-def perform_update(update_info):
-    try:
-        backup_path = update_info['script_path'] + ".bak"
-        if os.path.exists(backup_path):
-            os.remove(backup_path)
-        os.rename(update_info['script_path'], backup_path)
-        
-        with open(update_info['script_path'], 'w', encoding='utf-8') as f:
-            f.write(update_info['latest_script'])
-            
-        return True, f"Updated to v{update_info['latest_version']}. Please restart the script."
-    except Exception as e:
-        if os.path.exists(backup_path):
-            os.rename(backup_path, update_info['script_path'])
-        return False, f"Update failed: {str(e)}"
-
-def ask_for_update():
-    print(f"\n{Fore.YELLOW}🔍 Checking for updates...{Style.RESET_ALL}")
-    update_available, update_info = check_for_updates()
-    
-    if isinstance(update_info, str):
-        print(f"{Fore.BLUE}ℹ️ {update_info}{Style.RESET_ALL}")
-        return False
-        
-    if update_available:
-        print(f"\n{Fore.GREEN}🎉 Update available!{Style.RESET_ALL}")
-        print(f"{Fore.CYAN}Current version: {Fore.YELLOW}v{update_info['current_version']}{Style.RESET_ALL}")
-        print(f"{Fore.CYAN}Latest version: {Fore.GREEN}v{update_info['latest_version']}{Style.RESET_ALL}")
-        
-        choice = input(f"\n{Fore.YELLOW}👉 Do you want to update now? (y/n): {Style.RESET_ALL}").strip().lower()
-        if choice == 'y':
-            success, message = perform_update(update_info)
-            if success:
-                print(f"\n{Fore.GREEN}✅ {message}{Style.RESET_ALL}")
-                input(f"\n{Fore.YELLOW}↵ Press Enter to exit...{Style.RESET_ALL}")
-                sys.exit(0)
-            else:
-                print(f"\n{Fore.RED}❌ {message}{Style.RESET_ALL}")
-        else:
-            print(f"\n{Fore.BLUE}ℹ️ Update skipped. Continuing with current version.{Style.RESET_ALL}")
-    else:
-        print(f"{Fore.BLUE}ℹ️ {update_info}{Style.RESET_ALL}")
-
 def main():
-    ask_for_update()
-    
     controller = MEmuController()
     
     while True:
@@ -438,10 +356,9 @@ def main():
         print(f"{Fore.CYAN}5. {Fore.WHITE}🛑 Close Game")
         print(f"{Fore.CYAN}6. {Fore.WHITE}🌫️ Clear Fog")
         print(f"{Fore.CYAN}7. {Fore.WHITE}🛡️ Anti-Ban")
-        print(f"{Fore.CYAN}8. {Fore.WHITE}🔄 Check for Updates")
-        print(f"{Fore.CYAN}9. {Fore.WHITE}🚪 Exit")
+        print(f"{Fore.CYAN}8. {Fore.WHITE}🚪 Exit")
         
-        choice = input(f"\n{Fore.YELLOW}👉 Choice (1-9): {Style.RESET_ALL}").strip()
+        choice = input(f"\n{Fore.YELLOW}👉 Choice (1-8): {Style.RESET_ALL}").strip()
         
         if choice == "1":
             controller.show_devices()
@@ -512,9 +429,6 @@ def main():
             controller.set_anti_ban(enabled == 'y')
             
         elif choice == "8":
-            ask_for_update()
-            
-        elif choice == "9":
             print(f"\n{Fore.MAGENTA}✨ Goodbye!{Style.RESET_ALL}")
             break
             
