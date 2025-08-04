@@ -2,7 +2,8 @@
 
 ## 🖥️ Tính năng chính
 
-- Kết nối một hoặc nhiều thiết bị giả lập MEmu.
+- Hộ trợ nhiều loại giả lập
+- Kết nối một hoặc nhiều thiết bị giả lập 
 - Tự động xóa sương mù
 - Antiban
 
