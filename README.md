@@ -6,9 +6,9 @@
 
 ## 🖥️ Tính năng chính
 
-- Hổ trợ nhiều loại giả lập
+- Hổ trợ giả lập MEmu 
 - Kết nối một hoặc nhiều thiết bị giả lập 
-- Tự động xóa sương mù
+- Tự động xóa sương mù rise of kingdom
 - Anti-ban
 
 ---
