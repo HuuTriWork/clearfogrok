@@ -3,20 +3,13 @@ import sys
 import time
 import random
 import subprocess
-import requests
-from urllib.parse import urljoin
-
-VERSION = "1.0.1"
-GITHUB_REPO = "https://github.com/HuuTriWork/clearfogrok/"
-RAW_GITHUB = "https://raw.githubusercontent.com/HuuTriWork/clearfogrok/main/"
-
 try:
     from colorama import init, Fore, Back, Style
     import cv2
     import numpy as np
 except ImportError:
     import pip
-    packages = ['colorama', 'opencv-python', 'numpy', 'requests']
+    packages = ['colorama', 'opencv-python', 'numpy']
     for package in packages:
         pip.main(['install', package])
     from colorama import init, Fore, Back, Style
@@ -24,32 +17,6 @@ except ImportError:
     import numpy as np
 
 init()
-
-def check_for_updates():
-    try:
-        response = requests.get(urljoin(RAW_GITHUB, "version.txt"))
-        if response.status_code == 200:
-            latest_version = response.text.strip()
-            if latest_version > VERSION:
-                print(f"\n{Fore.YELLOW}⚠️ New version available: {latest_version}{Style.RESET_ALL}")
-                choice = input(f"{Fore.CYAN}👉 Update now? (y/n): {Style.RESET_ALL}").lower()
-                if choice == 'y':
-                    update_script()
-    except Exception as e:
-        print(f"\n{Fore.RED}❌ Update check failed: {str(e)}{Style.RESET_ALL}")
-
-def update_script():
-    try:
-        print(f"\n{Fore.YELLOW}⏳ Downloading update...{Style.RESET_ALL}")
-        response = requests.get(urljoin(RAW_GITHUB, "main.py"))
-        if response.status_code == 200:
-            with open(__file__, 'wb') as f:
-                f.write(response.content)
-            print(f"\n{Fore.GREEN}✅ Update successful! Please restart the script.{Style.RESET_ALL}")
-            input("Press Enter to exit...")
-            sys.exit(0)
-    except Exception as e:
-        print(f"\n{Fore.RED}❌ Update failed: {str(e)}{Style.RESET_ALL}")
 
 class MEmuController:
     def __init__(self):
@@ -375,10 +342,9 @@ def print_banner():
     ██║ ╚═╝ ██║███████╗██║ ╚═╝ ██║╚██████╔╝
     ╚═╝     ╚═╝╚══════╝╚═╝     ╚═╝ ╚═════╝ 
     {Style.RESET_ALL}""")
-    print(f"{Fore.YELLOW}⋆｡ﾟ✶°  MEmu Controller v{VERSION}  °✶ﾟ｡⋆{Style.RESET_ALL}\n")
+    print(f"{Fore.YELLOW}⋆｡ﾟ✶°  MEmu Controller  °✶ﾟ｡⋆{Style.RESET_ALL}\n")
 
 def main():
-    check_for_updates()
     controller = MEmuController()
     
     while True:
